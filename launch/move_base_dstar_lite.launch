@@ -1,0 +1,54 @@
+<launch>
+<rosparam command="load" file="$(find social_compliance_layer)/cfg/simple_behaviors.yaml" />
+
+
+<include file="$(find spencer_tracking_utils)/launch/filter_tracks_by_distance.launch" />
+
+
+<node pkg="move_base" type="move_base" respawn="false" name="move_base_node" output="screen" >
+        <remap from="/cmd_vel" to="/spencer/control/desired_velocity"/>
+
+
+        <param name="planner_frame" value="occ_map" type="string"/>
+        <param name="local_planner_frame" value="odom" type="string"/>
+        <param name="map_topic" value="/occ_map" type="string"/>
+        <param name="human_sub_topic" value="/spencer/perception/tracked_persons_confirmed_by_HOG_or_upper_body_or_moving" type="string"/>
+
+   
+        <!-- load additional move_base params -->
+        <rosparam file="$(find srl_global_planner)/config/move_base.yaml" command="load" />
+
+        <!-- load global navigation specific parameters -->
+        <rosparam file="$(find srl_global_planner)/config/common_params.yaml" command="load" ns="global_costmap" />
+        <!-- <rosparam file="$(find srl_global_planner)/config/common_params.yaml" command="load" ns="local_costmap" /> -->
+
+        <!-- <rosparam file="$(find srl_global_planner)/config/local_costmap_params.yaml" command="load" ns="local_costmap" /> -->
+        <rosparam file="$(find spencer_navigation)/move_base_config/local_costmap_params.yaml" command="load" ns="local_costmap" />
+
+        <rosparam file="$(find srl_global_planner)/config/global_costmap_params.yaml" command="load" ns="global_costmap" />
+
+
+        <!-- use the DWA as local planner for the spencer robot -->
+        <!-- <param name="base_local_planner" value="waypoint_follower/WaypointFollowerPlugin"/> -->
+        <param name="base_local_planner" value="eband_local_planner/EBandPlannerROS"/> 
+        <!-- <param name="base_local_planner" value="waypoint_follower/WaypointFollowerPlugin"/>
+        <!-- <param name="base_local_planner" value="srl_local_planner/srl_local_plannerPlugin" /> -->
+        <param name="base_global_planner" value="srl_dstar_lite/SrlDstarLiteROS"/>
+
+
+        <!--  <param name="base_local_planner" value="srl_local_planner/srl_local_plannerPlugin"/> -->
+
+
+        <!-- <rosparam file="$(find pedsim_2dnav)/config/dwa_local_planner_params.yaml" command="load" ns="DWAPlannerROS" /> -->
+
+        <!-- Move Base params -->
+        <param name="controller_frequency" value="10" />
+        <param name="controller_patience" value="100.0" />
+        <param name="planner_frequency" value="0.05" />
+        <param name="recovery_behavior_enabled" value="false"/>
+
+
+
+    </node>
+
+</launch>

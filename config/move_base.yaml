@@ -1,0 +1,60 @@
+# control loop will run at 5 hz
+controller_frequency: 10.0
+
+
+
+EBandPlannerROS:
+
+#TRAJECTORY CONTROL
+ differential_drive: true
+ max_acceleration: 0.5
+
+# velocity limits
+ max_vel_lin: 0.6
+ max_vel_th: 0.8
+ min_vel_lin: 0.1
+ min_vel_th: 0.0
+ min_in_place_vel_th: 0.0
+ in_place_trans_vel: 0.0
+
+# goal tolerance
+ xy_goal_tolerance: 0.2
+ yaw_goal_tolerance: 0.2
+
+# angular velocity PID
+ k_prop_: 0.75
+
+#eband parameters
+
+
+
+
+# Dynamic window parameters
+DWAPlannerROS:
+  # Robot configuration parameters
+  acc_lim_th: 100.8
+  acc_lim_x: 100.5
+  acc_lim_y: 0.0
+
+  max_vel_x: 2.5
+  min_vel_x: -0.5
+  max_vel_y: 0
+  min_vel_y: 0
+
+  max_trans_vel: 1.5
+  min_trans_vel: -0.5
+  max_rot_vel: 2.0
+  min_rot_vel: -2.0
+
+  # Goal Tolerance Parameters
+  yaw_goal_tolerance: 0.05
+  xy_goal_tolerance: 0.05
+  latch_xy_goal_tolerance: true
+
+  # # Forward Simulation Parameters
+  sim_time: 1.0
+  sim_granularity: 0.02
+  vx_samples: 12
+  vy_samples: 0
+  vtheta_samples: 20
+  penalize_negative_x: true
