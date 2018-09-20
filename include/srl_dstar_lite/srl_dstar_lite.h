@@ -1,4 +1,4 @@
-/* 
+/*
     SRL D* Lite ROS Package
     Copyright (C) 2015, Palmieri Luigi, palmieri@informatik.uni-freiburg.de
 
@@ -20,284 +20,251 @@
 #ifndef DSTAR_PLANNER_CPP
 #define DSTAR_PLANNER_CPP
 
-
-
-
 #include <cstdlib>
 #include <fstream>
 #include <iostream>
 
-#include <ros/ros.h>
 #include <ros/console.h>
-
+#include <ros/ros.h>
 
 #include <tf/transform_listener.h>
 
 #include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 
-#include <std_msgs/Header.h>
 #include <std_msgs/Bool.h>
+#include <std_msgs/Header.h>
 
 #include <nav_msgs/GridCells.h>
-#include <nav_msgs/Path.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/Path.h>
 
 #include <geometry_msgs/Point.h>
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Quaternion.h>
 #include <geometry_msgs/PointStamped.h>
-#include <geometry_msgs/PoseWithCovariance.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
+#include <geometry_msgs/PoseWithCovariance.h>
+#include <geometry_msgs/Quaternion.h>
 
-#include <srl_dstar_lite/world_model.h>
 #include <srl_dstar_lite/costmap_model.h>
 #include <srl_dstar_lite/data_structures.h>
 #include <srl_dstar_lite/dstar.h>
 #include <srl_dstar_lite/pathSplineSmoother/pathSplineSmoother.h>
+#include <srl_dstar_lite/world_model.h>
 
-#include <costmap_2d/costmap_2d_ros.h>
-#include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/cost_values.h>
+#include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/costmap_2d_ros.h>
 
 #include <nav_core/base_global_planner.h>
 
 #define COST_POSSIBLY_CIRCUMSCRIBED 128
 
-
-
-
-
-
-namespace srl_dstar_lite {
-
-
+namespace srl_dstar_lite
+{
 
 ///<  @brief SrlDstarLite class
 class SrlDstarLite : public nav_core::BaseGlobalPlanner
 {
 
-
-
-
-
 private:
+  ros::NodeHandle nh_;
+  // Publishers
+  ros::Publisher pub_path_;
+  ros::Publisher pub_goal_;
+  ros::Publisher pub_tree_;
+  ros::Publisher pub_tree_dedicated_;
+  ros::Publisher pub_path_dedicated_;
+  ros::Publisher pub_samples_;
+  ros::Publisher pub_graph_;
+  ros::Publisher pub_no_plan_;
+  ros::Publisher pub_obstacle_markers_;
 
-
-    ros::NodeHandle nh_;
-    // Publishers
-    ros::Publisher pub_path_;    
-    ros::Publisher pub_goal_;
-    ros::Publisher pub_tree_;
-    ros::Publisher pub_tree_dedicated_;
-    ros::Publisher pub_path_dedicated_;
-    ros::Publisher pub_samples_;
-    ros::Publisher pub_graph_;
-    ros::Publisher pub_no_plan_;
-    ros::Publisher pub_obstacle_markers_;
-
-
-    ros::Subscriber sub_obstacles_;    
-    ros::Subscriber sub_all_agents_;   
-
-
+  ros::Subscriber sub_obstacles_;
+  ros::Subscriber sub_all_agents_;
 
 public:
+  /**
+  * @brief Constructor of the Srl_global_planner
+  * @param node, Ros NodeHandle
+  * @param world_model, Cost Map model to load informaiton of the Global Cost map
+  * @param footprint_spec, footprint of the robot
+  * @param costmap_ros, cost_map ros wrapper
+  */
+  SrlDstarLite() : costmap_ros_(NULL), initialized_(false), world_model_(NULL) {}
+
+  /**
+  * @brief Constructor of the Srl_global_planner
+  * @param name, name to associate to the node
+  * @param costmap_ros, costmap_ros
+  */
+  SrlDstarLite(std::string name, costmap_2d::Costmap2DROS* costmap_ros) : costmap_ros_(costmap_ros)
+  {
+
+    initialize(name, costmap_ros);
+  }
+
+  /**
+  * @brief Initialize the ros handle
+  * @param name, Ros NodeHandle name
+  * @param costmap_ros, cost_map ros wrapper
+  */
+  void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+
+  /**
+  * @brief makePlan, follows the virtual method of the base class
+  * @param start, Start pose
+  * @param goal, goal pose
+  * @param plan, generated path
+  * @return bool, true
+  */
+  bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal,
+                std::vector< geometry_msgs::PoseStamped >& plan);
+
+  /**
+  * @brief callbackObstacles, Read occupancy grid from global cost map
+  * @return void
+  */
+  void callbackObstacles(const nav_msgs::OccupancyGrid::ConstPtr& msg);
+
+  /**
+  * @brief publishPath, Publish path
+  * @return void
+  */
+  void publishPath(std::vector< geometry_msgs::PoseStamped > grid_plan);
+
+  /**
+  * @brief plan a kinodynamic path using RRT
+  * @param, grid_plan Plan generated
+  * @param, start pose
+  * @return true, if the plan was found
+  */
+  int plan(std::vector< geometry_msgs::PoseStamped >& grid_plan, geometry_msgs::PoseStamped& start);
 
+  /**
+  * @brief set the Goal region
+  * @param, x coordinate of the goal pose
+  * @param, y coordinate of the goal pose
+  * @param, theta yaw angle of the goal pose
+  * @param, toll yaw angle of the goal pose
+  * @param, goal_frame goal frame
+  * @return void
+  */
+  void setGoal(double x, double y, double theta, double toll, std::string goal_frame);
 
-    /**
-    * @brief Constructor of the Srl_global_planner
-    * @param node, Ros NodeHandle
-    * @param world_model, Cost Map model to load informaiton of the Global Cost map
-    * @param footprint_spec, footprint of the robot
-    * @param costmap_ros, cost_map ros wrapper
-    */
-    SrlDstarLite() : costmap_ros_(NULL), initialized_(false),  world_model_(NULL) {
-
-    }
-
-    /**
-    * @brief Constructor of the Srl_global_planner
-    * @param name, name to associate to the node
-    * @param costmap_ros, costmap_ros
-    */
-    SrlDstarLite(std::string name, costmap_2d::Costmap2DROS* costmap_ros) : costmap_ros_(costmap_ros)
-    {
-
-        initialize(name, costmap_ros);
-    }
-
-    /**
-    * @brief Initialize the ros handle
-    * @param name, Ros NodeHandle name
-    * @param costmap_ros, cost_map ros wrapper
-    */
-    void initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros);
+  /**
+  * @brief Transform pose in planner_frame
+  * @param, init_pose initial pose to transform
+  * @return Pose transformed
+  */
+  geometry_msgs::PoseStamped transformPose(geometry_msgs::PoseStamped init_pose);
 
-    /**
-    * @brief makePlan, follows the virtual method of the base class
-    * @param start, Start pose
-    * @param goal, goal pose
-    * @param plan, generated path
-    * @return bool, true
-    */
-    bool makePlan(const geometry_msgs::PoseStamped& start, const geometry_msgs::PoseStamped& goal, std::vector<geometry_msgs::PoseStamped>& plan );
+  /**
+  * @brief Wrap the angle
+  * @param, alpha, angle to wrap in the range [min min+2*M_PI]
+  * @param, min, beginning of the range
+  * @return angle in correct range
+  */
+  double set_angle_to_range(double alpha, double min);
 
+  /**
+  * @brief Get from the cost map the footprint cost associated to the point x_bot, y_bot, orient_bot
+  * @param,  x_bot, y_bot, orient_bot, robot pose
+  * @return  footprint cost
+  */
 
-    /**
-    * @brief callbackObstacles, Read occupancy grid from global cost map
-    * @return void
-    */
-    void callbackObstacles(const nav_msgs::OccupancyGrid::ConstPtr& msg);
+  double getFootPrintCost(double x_bot, double y_bot, double orient_bot);
 
+  /**
+  * @brief Smooth Plan, smooth the path using splines
+  * @param,  list<state> path, path generated by the D* Lite algorithm
+  * @return  the path shortcutted
+  */
+  vector< RealPoint > SmoothPlan(list< state > path);
 
+  /**
+  * @brief ShortcutPlan, shortcuts the path if no obstacles is between the points
+  * @param,  list<state> path, path generated by the D* Lite algorithm
+  * @return  the path shortcutted
+  */
+  list< state > ShortcutPlan(list< state > path);
 
-    /**
-    * @brief publishPath, Publish path
-    * @return void
-    */
-    void publishPath(std::vector< geometry_msgs::PoseStamped > grid_plan);
+  bool initialized_;
 
+  int cnt_make_plan_;
 
-    /**
-    * @brief plan a kinodynamic path using RRT
-    * @param, grid_plan Plan generated 
-    * @param, start pose
-    * @return true, if the plan was found
-    */
-    int plan(std::vector< geometry_msgs::PoseStamped > &grid_plan, geometry_msgs::PoseStamped& start);
+  double cellwidth_; ///<  @brief Cell width
 
-    /**
-    * @brief set the Goal region
-    * @param, x coordinate of the goal pose
-    * @param, y coordinate of the goal pose
-    * @param, theta yaw angle of the goal pose
-    * @param, toll yaw angle of the goal pose
-    * @param, goal_frame goal frame
-    * @return void
-    */
-    void setGoal(double x, double y, double theta, double toll, std::string goal_frame);
+  double cellheight_; ///<  @brief Cell height
 
+  base_local_planner::CostmapModel* world_model_; ///<  @brief World Model associated to the costmap
 
-    /**
-    * @brief Transform pose in planner_frame
-    * @param, init_pose initial pose to transform
-    * @return Pose transformed
-    */
-    geometry_msgs::PoseStamped transformPose(geometry_msgs::PoseStamped init_pose);
+  std::vector< geometry_msgs::Point > footprint_spec_; ///< @brief FootPrint list of points of the robot
 
+  costmap_2d::Costmap2DROS* costmap_ros_; ///< @brief The ROS wrapper for the costmap the controller will use
 
-    /**
-    * @brief Wrap the angle
-    * @param, alpha, angle to wrap in the range [min min+2*M_PI]
-    * @param, min, beginning of the range
-    * @return angle in correct range
-    */
-    double set_angle_to_range(double alpha, double min);
+  costmap_2d::Costmap2D* costmap_; ///< @brief The ROS wrapper for the costmap the controller will use
 
-    /**
-    * @brief Get from the cost map the footprint cost associated to the point x_bot, y_bot, orient_bot
-    * @param,  x_bot, y_bot, orient_bot, robot pose
-    * @return  footprint cost
-    */
+  std::string node_name_; ///<  @brief Node name
 
-    double getFootPrintCost(double x_bot, double y_bot, double orient_bot);
+  double goal_x_; ///<  @brief x coordinate of the goal pose
 
+  double goal_y_; ///<  @brief y coordinate of the goal pose
 
-    /**
-    * @brief Smooth Plan, smooth the path using splines
-    * @param,  list<state> path, path generated by the D* Lite algorithm
-    * @return  the path shortcutted
-    */
-    vector<RealPoint> SmoothPlan(list<state> path);
+  double goal_theta_; ///<  @brief yaw angle of the goal pose
 
+  double toll_goal_; ///<  @brief toll the goal region
 
-    /**
-    * @brief ShortcutPlan, shortcuts the path if no obstacles is between the points
-    * @param,  list<state> path, path generated by the D* Lite algorithm
-    * @return  the path shortcutted
-    */
-    list<state> ShortcutPlan(list<state> path);
+  double rx, ry, rz; ///<  @brief robot coordinates
 
-    bool initialized_;
+  double xscene_; ///<  @brief Width of the scene in meters
 
-    int cnt_make_plan_;
+  double yscene_; ///<  @brief Height of the scene in meters
 
-    double cellwidth_;  ///<  @brief Cell width
+  std::vector< Tobstacle > obstacle_positions; ///<  @brief Obstacles
 
-    double cellheight_; ///<  @brief Cell height
+  std::vector< Thuman > agents_position; ///<  @brief agents
 
-    base_local_planner::CostmapModel* world_model_; ///<  @brief World Model associated to the costmap
+  bool goal_init_; ///<  @brief Flag that indicates if the goal is initialized
 
-    std::vector<geometry_msgs::Point> footprint_spec_; ///< @brief FootPrint list of points of the robot
+  geometry_msgs::Pose start_pose_; ///<  @brief Start pose
 
-    costmap_2d::Costmap2DROS* costmap_ros_; ///< @brief The ROS wrapper for the costmap the controller will use
+  geometry_msgs::Pose goal_pose_; ///<  @brief Goal pose
 
-    costmap_2d::Costmap2D* costmap_; ///< @brief The ROS wrapper for the costmap the controller will use
+  //
+  ros::Time begin; ///<  @brief fMap loading only during the first Nsecs
 
-    std::string node_name_;  ///<  @brief Node name
+  double initialization_time; ///<  @brief initialization time for map
 
-    double goal_x_; ///<  @brief x coordinate of the goal pose
+  double map_loading_time; ///<  @brief map loading time
 
-    double goal_y_; ///<  @brief y coordinate of the goal pose
+  double max_map_loading_time; ///<  @brief max map loading time
 
-    double goal_theta_; ///<  @brief yaw angle of the goal pose
+  int cnt_map_readings; ///<  @brief counter of map readings
 
-    double toll_goal_; ///<  @brief toll the goal region
+  std::string costmap_frame_; ///<  @brief costmap frame
 
+  std::string planner_frame_; ///<  @brief planner frame
 
-    double rx,ry,rz; ///<  @brief robot coordinates
+  double width_map_; ///<  @brief Width of the 2D space where to sample
 
-    double xscene_; ///<  @brief Width of the scene in meters
+  double height_map_; ///<  @brief Height of the 2D space where to sample
 
-    double yscene_; ///<  @brief Height of the scene in meters
+  double center_map_x_; ///<  @brief x coordinate of the center of 2D space where to sample
 
-    std::vector<Tobstacle> obstacle_positions; ///<  @brief Obstacles
+  double center_map_y_; ///<  @brief y coordinate of the center of 2D space where to sample
 
-    std::vector<Thuman> agents_position; ///<  @brief agents
+  int cnt_no_plan_; ///<  @brief counter of no planning sol
 
-    bool goal_init_; ///<  @brief Flag that indicates if the goal is initialized
+  Dstar* dstar_planner_; ///<  Dstar planner
 
-    geometry_msgs::Pose start_pose_; ///<  @brief Start pose
+  PathSplineSmoother* spline_smoother_;
 
-    geometry_msgs::Pose goal_pose_; ///<  @brief Goal pose
+  bool SMOOTHING_ON_;
 
-    //
-    ros::Time begin; ///<  @brief fMap loading only during the first Nsecs
-
-    double initialization_time; ///<  @brief initialization time for map
-
-    double map_loading_time; ///<  @brief map loading time
-
-    double max_map_loading_time; ///<  @brief max map loading time
-
-    int cnt_map_readings; ///<  @brief counter of map readings
-
-    std::string costmap_frame_;  ///<  @brief costmap frame
-
-    std::string planner_frame_; ///<  @brief planner frame
-
-    double width_map_;  ///<  @brief Width of the 2D space where to sample
-
-    double height_map_; ///<  @brief Height of the 2D space where to sample
-
-    double center_map_x_; ///<  @brief x coordinate of the center of 2D space where to sample
-
-    double center_map_y_; ///<  @brief y coordinate of the center of 2D space where to sample
-
-    int cnt_no_plan_; ///<  @brief counter of no planning sol
-
-    Dstar *dstar_planner_; ///<  Dstar planner
-
-    PathSplineSmoother *spline_smoother_;
-
-    bool SMOOTHING_ON_;
-
-    bool SHORTCUTTING_ON_;
-
+  bool SHORTCUTTING_ON_;
 };
-
 }
 
 #endif // DSTAR_planner_H

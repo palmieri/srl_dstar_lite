@@ -15,7 +15,6 @@
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>BSD</license>
 
-
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>geometry_msgs</build_depend>
   <build_depend>nav_msgs</build_depend>
@@ -41,10 +40,8 @@
   <run_depend>tf</run_depend>
   <run_depend>visualization_msgs</run_depend>
 
-
   <export>
     <nav_core plugin="${prefix}/srl_dstar_lite_plugin.xml" />
   </export>
-
 
 </package>
