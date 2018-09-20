@@ -30,10 +30,6 @@
 #include <ros/ros.h>
 #include <ros/console.h>
 
-#include <spencer_tracking_msgs/TrackedPersons.h>
-#include <spencer_control_msgs/CollisionStatus.h>
-#include <spencer_nav_msgs/SetDrivingDirection.h>
-#include <spencer_nav_msgs/StopDriving.h>
 
 #include <tf/transform_listener.h>
 
@@ -155,11 +151,6 @@ public:
     */
     void callbackObstacles(const nav_msgs::OccupancyGrid::ConstPtr& msg);
 
-    /**
-    * @brief callbackAllTracks, Read the agents
-    * @return void
-    */
-    void callbackAllTracks(const spencer_tracking_msgs::TrackedPersons::ConstPtr& msg);
 
 
     /**
