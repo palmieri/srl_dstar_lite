@@ -1,15 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(srl_dstar_lite)
 
-ADD_DEFINITIONS(-std=c++0x) # C++ 11 is required
+ADD_DEFINITIONS(-std=c++11) # C++ 11 is required
 
 find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   nav_core
   nav_msgs
-  spencer_tracking_msgs
-  spencer_nav_msgs
-  spencer_control_msgs
   pluginlib
   costmap_2d
   roscpp
@@ -21,14 +18,8 @@ find_package(catkin REQUIRED COMPONENTS
 
 find_package(cmake_modules REQUIRED)
 
-
-
-# add qt4 to the project
 FIND_PACKAGE(Eigen REQUIRED)
 FIND_PACKAGE(Boost REQUIRED)
-
-
-
 
 catkin_package(
 
@@ -43,15 +34,8 @@ catkin_package(
     visualization_msgs
     costmap_2d
     pluginlib
-
-    spencer_tracking_msgs
-    spencer_nav_msgs
-    spencer_control_msgs
-
   LIBRARIES
     srl_dstar_lite
-
-
 )
 
 ###########
@@ -66,13 +50,12 @@ include_directories(
   ${catkin_INCLUDE_DIRS}
 )
 
-
-
 set(SOURCES
-    src/srl_dstar_lite.cpp include/srl_dstar_lite/costmap_model.cpp src/dstar.cpp include/srl_dstar_lite/pathSplineSmoother/pathSplineSmoother.cpp
+    src/srl_dstar_lite.cpp
+    include/srl_dstar_lite/costmap_model.cpp
+    src/dstar.cpp
+    include/srl_dstar_lite/pathSplineSmoother/pathSplineSmoother.cpp
 )
-
-
 
 # Plugin
 add_library(srl_dstar_lite  ${SOURCES_RRT} ${SOURCES})
