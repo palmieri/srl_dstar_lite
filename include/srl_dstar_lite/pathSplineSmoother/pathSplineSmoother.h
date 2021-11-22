@@ -18,105 +18,102 @@
 
  */
 
-
-
-#include <iostream>
 #include <fstream>
+#include <iostream>
+#include <math.h>
 #include <sstream>
 #include <string.h>
-#include <vector>
 #include <time.h>
-#include <math.h>
+#include <vector>
 
-#include <srl_dstar_lite/pathSplineSmoother/realPoint.h>
-#include <ros/ros.h>
 #include <ros/console.h>
+#include <ros/ros.h>
+#include <srl_dstar_lite/pathSplineSmoother/realPoint.h>
 
 class PathSplineSmoother
 {
-	public:
-		
-		// Constructor with default sigma
-		PathSplineSmoother();
-		// Constructor with user's sigma input
-		PathSplineSmoother(double sigma);
-		// Destructor (currently nothing is there)
-		~PathSplineSmoother();
-		
-		// Get sigma value
-		double getSigma();
-		// Set sigma value
-		void setSigma(double sigma);
-		
-		// Copy input path from a RealPoint vector
-		bool readPathFromStruct(std::vector<RealPoint> path);
-		// Read input path from file
-		bool readPathFromFile(std::string fileName);
-		// Print input/filtered/smoothed path
-		void printOriginalPath();
+public:
+  // Constructor with default sigma
+  PathSplineSmoother();
+  // Constructor with user's sigma input
+  PathSplineSmoother(double sigma);
+  // Destructor (currently nothing is there)
+  ~PathSplineSmoother();
 
-		void printFilteredPath();
+  // Get sigma value
+  double getSigma();
+  // Set sigma value
+  void setSigma(double sigma);
 
-		void printSmoothPath();
-		// Get input/filtered/smoothed path
-		std::vector<RealPoint> getOriginalPath();
+  // Copy input path from a RealPoint vector
+  bool readPathFromStruct(std::vector< RealPoint > path);
+  // Read input path from file
+  bool readPathFromFile(std::string fileName);
+  // Print input/filtered/smoothed path
+  void printOriginalPath();
 
-		std::vector<RealPoint> getFilteredPath();
+  void printFilteredPath();
 
-		std::vector<RealPoint> getSmoothPath();
-		// Clear input/filtered/smoothed path
-		void deleteOriginalPath();
+  void printSmoothPath();
+  // Get input/filtered/smoothed path
+  std::vector< RealPoint > getOriginalPath();
 
-		void deleteFilteredPath();
+  std::vector< RealPoint > getFilteredPath();
 
-		void deleteSmoothPath();
-		// Filter path
-		// (remove some points from dense places, required for correct spline smoothing)
-		// P parameter is the avgSegmentLength multiplier, set p to accept every
-		// next point located further than p*avgSegmentLength.
-		bool filterPath(double p);
-		// Places additional points on segments of the input path to equilibrate
-		// segment lengths. Parameter p is how densely the additional points are placed.
-		bool placeAdditionalPoints(double p);
-		// Smooth path
-		bool smoothPath();
-		// 1D spline smoothing subroutine for smoothPath() function
-		void splineSmoothing(double input[], double x[], int n, double sig);
-		// Direct (in-place) 2D path smoothing
-		bool smoothPath2D();
-		//TODO distance between first, last points, Frechet, what else?
-		bool smoothWhileDistanceLessThan(double max_displacement, double sigma_div);
-		
-		// Iteratively increase amount of smoothing as long as smooth path's
-		// start and goal displacement is smaller than acceptable max_displacement.
-		bool smoothWhileSGDistanceLessThan(double max_displacement, double sigma_div);
-		// Fix large displacement of start and goal points of the smooth path
-		bool fixStartGoalDisplacement(int numPointsToRemove, double max_displacement, double sigma_div);
+  std::vector< RealPoint > getSmoothPath();
+  // Clear input/filtered/smoothed path
+  void deleteOriginalPath();
 
-	   	// Compute how much the first and last points of the smooth path shifted
-		// from the original.
-		double distanceBetweenStartingPoints();
+  void deleteFilteredPath();
 
-		// Checks if path is a straight line
-		// In that case no smoothing is required
-		bool isPathLine(std::vector<RealPoint> path);
+  void deleteSmoothPath();
+  // Filter path
+  // (remove some points from dense places, required for correct spline smoothing)
+  // P parameter is the avgSegmentLength multiplier, set p to accept every
+  // next point located further than p*avgSegmentLength.
+  bool filterPath(double p);
+  // Places additional points on segments of the input path to equilibrate
+  // segment lengths. Parameter p is how densely the additional points are placed.
+  bool placeAdditionalPoints(double p);
+  // Smooth path
+  bool smoothPath();
+  // 1D spline smoothing subroutine for smoothPath() function
+  void splineSmoothing(double input[], double x[], int n, double sig);
+  // Direct (in-place) 2D path smoothing
+  bool smoothPath2D();
+  // TODO distance between first, last points, Frechet, what else?
+  bool smoothWhileDistanceLessThan(double max_displacement, double sigma_div);
 
-		double distanceBetweenEndingPoints();
+  // Iteratively increase amount of smoothing as long as smooth path's
+  // start and goal displacement is smaller than acceptable max_displacement.
+  bool smoothWhileSGDistanceLessThan(double max_displacement, double sigma_div);
+  // Fix large displacement of start and goal points of the smooth path
+  bool fixStartGoalDisplacement(int numPointsToRemove, double max_displacement, double sigma_div);
 
-		// Compute how much a point on the path has shifted while smoothing
-		double maxDisplacement();
-		// TODO maybe this displacement measure is enough? Frechet is length^2 complexity...
-		void writeFiles();
-	
-	private:
-		// Sigma value
-		double sigma_;
-		// Default sigma constant value
-		const double defSigma_ = 0.9;
-		// Input path
-		std::vector<RealPoint> path_;
-		// Filtered path
-		std::vector<RealPoint> pathC_;
-		// Smoothed path
-		std::vector<RealPoint> pathS_;
+  // Compute how much the first and last points of the smooth path shifted
+  // from the original.
+  double distanceBetweenStartingPoints();
+
+  // Checks if path is a straight line
+  // In that case no smoothing is required
+  bool isPathLine(std::vector< RealPoint > path);
+
+  double distanceBetweenEndingPoints();
+
+  // Compute how much a point on the path has shifted while smoothing
+  double maxDisplacement();
+  // TODO maybe this displacement measure is enough? Frechet is length^2 complexity...
+  void writeFiles();
+
+private:
+  // Sigma value
+  double sigma_;
+  // Default sigma constant value
+  const double defSigma_ = 0.9;
+  // Input path
+  std::vector< RealPoint > path_;
+  // Filtered path
+  std::vector< RealPoint > pathC_;
+  // Smoothed path
+  std::vector< RealPoint > pathS_;
 };
